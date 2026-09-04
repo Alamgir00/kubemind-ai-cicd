@@ -1,0 +1,10 @@
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "github_owner" { type = string }
+variable "github_repo" { type = string }
+variable "github_branch" { type = string }
+variable "codebuild_project_name" { type = string }
+variable "codedeploy_application_name" { type = string }
+variable "codedeploy_deployment_group" { type = string }
+variable "codepipeline_role_arn" { type = string }
+variable "artifact_bucket_name" { type = string }

@@ -1,0 +1,32 @@
+aws_region   = "ap-south-1"
+project_name = "kubemind-cicd"
+environment  = "production"
+
+vpc_cidr = "10.40.0.0/16"
+
+public_subnet_cidrs  = ["10.40.1.0/24", "10.40.2.0/24"]
+private_subnet_cidrs = ["10.40.11.0/24", "10.40.12.0/24"]
+
+# Tighten this for production. Example: ["203.0.113.10/32"]
+allowed_ingress_cidrs = ["0.0.0.0/0"]
+
+container_port = 80
+desired_count  = 2
+cpu            = 256
+memory         = 512
+
+github_owner  = "YOUR_GITHUB_OWNER"
+github_repo   = "YOUR_GITHUB_REPO"
+github_branch = "main"
+
+# Leave empty unless you want SNS email notifications.
+alert_email = ""
+
+# true = one NAT Gateway per AZ (more resilient, higher cost)
+enable_nat_gateway_per_az = true
+
+log_retention_days = 30
+
+tags = {
+  Team = "KubeMind-AI"
+}
