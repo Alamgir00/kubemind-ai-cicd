@@ -1,0 +1,188 @@
+name: KubeMind AI - CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: kubemind-cicd
+  ECS_CLUSTER: kubemind-cicd-dev
+  ECS_SERVICE: kubemind-cicd-dev
+  ECS_TASK_FAMILY: kubemind-cicd-dev
+  CODEDEPLOY_APPLICATION: kubemind-cicd-dev
+  CODEDEPLOY_DEPLOYMENT_GROUP: kubemind-cicd-dev
+
+jobs:
+  deploy:
+    name: Build, Push and Blue/Green Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::650694421089:role/GitHubActions-KubeMind-AI
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Validate application
+        run: |
+          test -f application/Dockerfile
+          test -f application/app/index.html
+          echo "Application validation passed."
+
+      - name: Build Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            ./application
+
+      - name: Push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Get current ECS task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition $ECS_TASK_FAMILY \
+            --region $AWS_REGION \
+            --query 'taskDefinition' \
+            --output json > /tmp/taskdef.json
+
+      - name: Prepare new task definition
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+
+          with open("/tmp/taskdef.json") as f:
+              td = json.load(f)
+
+          for key in [
+              "taskDefinitionArn",
+              "revision",
+              "status",
+              "requiresAttributes",
+              "compatibilities",
+              "registeredAt",
+              "registeredBy"
+          ]:
+              td.pop(key, None)
+
+          td["containerDefinitions"][0]["image"] = (
+              f"{os.environ['ECR_REGISTRY']}/"
+              f"{os.environ['ECR_REPOSITORY']}:"
+              f"{os.environ['IMAGE_TAG']}"
+          )
+
+          with open("/tmp/new-taskdef.json", "w") as f:
+              json.dump(td, f, indent=2)
+          PY
+
+      - name: Register ECS task definition
+        id: taskdef
+        run: |
+          TASKDEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/new-taskdef.json \
+            --region $AWS_REGION \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "task_definition_arn=$TASKDEF_ARN" >> "$GITHUB_OUTPUT"
+          echo "Registered: $TASKDEF_ARN"
+
+      - name: Create CodeDeploy AppSpec
+        env:
+          TASKDEF_ARN: ${{ steps.taskdef.outputs.task_definition_arn }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import json
+
+          content = f"""version: 0.0
+          Resources:
+            - TargetService:
+                Type: AWS::ECS::Service
+                Properties:
+                  TaskDefinition: {os.environ['TASKDEF_ARN']}
+                  LoadBalancerInfo:
+                    ContainerName: kubemind-app
+                    ContainerPort: 80
+          """
+
+          payload = {
+              "applicationName": os.environ["CODEDEPLOY_APPLICATION"],
+              "deploymentGroupName": os.environ["CODEDEPLOY_DEPLOYMENT_GROUP"],
+              "revision": {
+                  "revisionType": "AppSpecContent",
+                  "appSpecContent": {
+                      "content": content
+                  }
+              }
+          }
+
+          with open("/tmp/codedeploy.json", "w") as f:
+              json.dump(payload, f, indent=2)
+          PY
+
+      - name: Start CodeDeploy Blue/Green deployment
+        id: deploy
+        run: |
+          DEPLOYMENT_ID=$(aws deploy create-deployment \
+            --cli-input-json file:///tmp/codedeploy.json \
+            --region $AWS_REGION \
+            --query 'deploymentId' \
+            --output text)
+
+          echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+          echo "Deployment: $DEPLOYMENT_ID"
+
+      - name: Wait for CodeDeploy deployment
+        env:
+          DEPLOYMENT_ID: ${{ steps.deploy.outputs.deployment_id }}
+        run: |
+          echo "Waiting for CodeDeploy deployment: $DEPLOYMENT_ID"
+
+          aws deploy wait deployment-successful \
+            --deployment-id "$DEPLOYMENT_ID" \
+            --region "$AWS_REGION"
+
+          echo "Blue/Green deployment succeeded."
+
+      - name: Deployment summary
+        env:
+          DEPLOYMENT_ID: ${{ steps.deploy.outputs.deployment_id }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "======================================"
+          echo " KubeMind AI Deployment Successful"
+          echo "======================================"
+          echo "Commit:     $IMAGE_TAG"
+          echo "Deployment: $DEPLOYMENT_ID"
+          echo "ECR:        $ECR_REPOSITORY"
+          echo "Region:     $AWS_REGION"
+          echo "======================================"
