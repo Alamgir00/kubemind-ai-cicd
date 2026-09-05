@@ -59,7 +59,7 @@ resource "aws_s3_bucket_policy" "tls_only" {
 }
 
 resource "aws_codeconnections_connection" "github" {
-  name          = "${var.project_name}-${var.environment}-github"
+  name          = "${var.project_name}-${var.environment}-github-app"
   provider_type = "GitHub"
 }
 
