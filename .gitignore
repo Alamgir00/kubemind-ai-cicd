@@ -9,3 +9,8 @@ crash.*.log
 *.tfplan.json
 .env
 .DS_Store
+
+# Temporary Terraform migration/backup files
+terraform/backup-before-github-app-*/
+terraform/modules/codepipeline/variables.tf.save
+terraform/update-github-app.sh
