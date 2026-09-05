@@ -29,14 +29,26 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Validate application files
+      - name: Diagnose GitHub runner workspace
         run: |
-          test -f application/Dockerfile
-          test -f application/index.html
-          test -f application/taskdef.json
-          test -f application/appspec.yaml
+          echo "=== Working directory ==="
+          pwd
 
-          echo "Application files validated successfully."
+          echo
+          echo "=== Repository files ==="
+          ls -la
+
+          echo
+          echo "=== Application files ==="
+          find application -maxdepth 2 -type f -print
+
+          echo
+          echo "=== Git revision ==="
+          git rev-parse HEAD
+
+          echo
+          echo "=== Dockerfile check ==="
+          ls -l application/Dockerfile
 
       - name: Build Docker image
         env:
