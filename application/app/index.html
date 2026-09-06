@@ -1,1 +1,788 @@
-abcd
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soham Paul — DevOps Engineer</title>
+<meta name="description" content="Soham Paul's hands-on DevOps learning journey: Git, Docker, and a production-style AWS CI/CD pipeline from GitHub to ECS Fargate.">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          base: '#0A0E14',
+          surface: '#10151F',
+          surface2: '#141B26',
+          line: '#1E2733',
+          fg: '#E6EDF3',
+          muted: '#8B98A5',
+          blue: '#4C8DFF',
+          cyan: '#22D3EE',
+          violet: '#8B7FFF',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background-color: #0A0E14; }
+
+  ::selection { background: #4C8DFF; color: #0A0E14; }
+
+  /* Faint grid backdrop */
+  .grid-field {
+    background-image:
+      linear-gradient(rgba(140,160,190,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(140,160,190,0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+
+  .glow {
+    background: radial-gradient(600px circle at 20% 0%, rgba(76,141,255,0.16), transparent 60%),
+                radial-gradient(500px circle at 90% 10%, rgba(139,127,255,0.12), transparent 55%);
+  }
+
+  .glass {
+    background: rgba(16, 21, 31, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+
+  .caret {
+    display: inline-block;
+    width: 8px;
+    height: 1.1em;
+    background: #22D3EE;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .nav-link { position: relative; }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -4px;
+    height: 1px; width: 0%;
+    background: #4C8DFF;
+    transition: width 0.25s ease;
+  }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+  .nav-link.active { color: #E6EDF3; }
+
+  .stage-card { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+  .stage-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(76,141,255,0.5);
+    box-shadow: 0 12px 30px -12px rgba(76,141,255,0.25);
+  }
+
+  .chip { transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease; }
+  .chip:hover {
+    border-color: rgba(34,211,238,0.5);
+    color: #E6EDF3;
+    background-color: rgba(34,211,238,0.06);
+  }
+
+  .flow-line {
+    background: linear-gradient(90deg, transparent, rgba(76,141,255,0.55), transparent);
+  }
+  .flow-line-v {
+    background: linear-gradient(180deg, transparent, rgba(76,141,255,0.55), transparent);
+  }
+
+  #mobile-menu { transition: max-height 0.35s ease, opacity 0.3s ease; }
+
+  .scrollbar-thin::-webkit-scrollbar { height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #1E2733; border-radius: 4px; }
+
+  a, button { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid #22D3EE; outline-offset: 2px; }
+</style>
+</head>
+
+<body class="bg-base text-fg font-body antialiased">
+
+<!-- ============ NAVIGATION ============ -->
+<header id="site-header" class="fixed top-0 inset-x-0 z-50 border-b border-transparent">
+  <nav class="glass border-b border-line/0 transition-colors">
+    <div class="max-w-6xl mx-auto px-5 sm:px-8">
+      <div class="h-16 flex items-center justify-between">
+        <a href="#home" class="font-display font-semibold text-lg tracking-tight text-fg flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan"></span>
+          Soham Paul
+        </a>
+
+        <div class="hidden md:flex items-center gap-8 font-body text-sm text-muted">
+          <a href="#home" class="nav-link active" data-nav>Home</a>
+          <a href="#journey" class="nav-link" data-nav>Journey</a>
+          <a href="#pipeline" class="nav-link" data-nav>CI/CD Pipeline</a>
+          <a href="#skills" class="nav-link" data-nav>Skills</a>
+          <a href="#mentor" class="nav-link" data-nav>Mentor</a>
+        </div>
+
+        <div class="hidden md:block">
+          <a href="https://www.linkedin.com/in/paul-soham8/" target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-2 rounded-md border border-line px-4 py-2 text-sm font-medium text-fg hover:border-blue/60 hover:text-blue transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+            LinkedIn
+          </a>
+        </div>
+
+        <button id="menu-btn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"
+          class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-md border border-line text-fg">
+          <svg id="icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <svg id="icon-close" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="md:hidden overflow-hidden max-h-0 opacity-0">
+      <div class="px-5 sm:px-8 pb-5 pt-1 flex flex-col gap-4 border-t border-line/60 font-body text-sm text-muted">
+        <a href="#home" class="py-1" data-nav data-mobile>Home</a>
+        <a href="#journey" class="py-1" data-nav data-mobile>Journey</a>
+        <a href="#pipeline" class="py-1" data-nav data-mobile>CI/CD Pipeline</a>
+        <a href="#skills" class="py-1" data-nav data-mobile>Skills</a>
+        <a href="#mentor" class="py-1" data-nav data-mobile>Mentor</a>
+        <a href="https://www.linkedin.com/in/paul-soham8/" target="_blank" rel="noopener noreferrer"
+           class="mt-1 inline-flex items-center justify-center gap-2 rounded-md border border-line px-4 py-2 text-fg">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+          LinkedIn Profile
+        </a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="home" class="relative pt-32 pb-24 md:pt-40 md:pb-32 overflow-hidden">
+  <div class="absolute inset-0 grid-field pointer-events-none"></div>
+  <div class="absolute inset-0 glow pointer-events-none"></div>
+
+  <div class="relative max-w-6xl mx-auto px-5 sm:px-8 grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
+    <div>
+      <span class="inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-1.5 text-xs font-mono text-cyan bg-surface/60">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse"></span>
+        CI/CD · Docker · AWS · Automation
+      </span>
+
+      <h1 class="mt-6 font-display font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] tracking-tight text-fg">
+        Hi, I'm Soham Paul.
+        <span class="block text-muted mt-2">DevOps Engineer in progress.</span>
+      </h1>
+
+      <p class="mt-6 text-muted text-base sm:text-lg leading-relaxed max-w-xl">
+        I'm building my DevOps skills through hands-on automation, containerization,
+        AWS CI/CD pipelines, and production-style deployment workflows.
+      </p>
+
+      <div class="mt-9 flex flex-wrap items-center gap-4">
+        <a href="#journey"
+           class="inline-flex items-center gap-2 rounded-md bg-blue px-5 py-3 text-sm font-medium text-white hover:bg-blue/90 transition-colors">
+          View My Journey
+        </a>
+        <a href="https://www.linkedin.com/in/paul-soham8/" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 rounded-md border border-line px-5 py-3 text-sm font-medium text-fg hover:border-blue/60 hover:text-blue transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+          LinkedIn Profile
+        </a>
+      </div>
+    </div>
+
+    <!-- Terminal mockup: characteristic hero visual -->
+    <div class="reveal is-visible">
+      <div class="rounded-xl border border-line bg-surface shadow-2xl shadow-black/40 overflow-hidden">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-line bg-surface2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></span>
+          <span class="ml-3 font-mono text-xs text-muted">deploy.sh — pipeline</span>
+        </div>
+        <div id="terminal-body" class="px-5 py-5 font-mono text-[13px] leading-7 text-muted min-h-[280px]"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOURNEY ============ -->
+<section id="journey" class="relative py-24 md:py-32 border-t border-line">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="max-w-2xl reveal">
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl tracking-tight">My DevOps journey</h2>
+      <p class="mt-4 text-muted leading-relaxed">
+        A practical, step-by-step path — learning each tool by actually using it, then
+        connecting the pieces into one automated workflow.
+      </p>
+    </div>
+
+    <div class="mt-16 relative">
+      <div class="hidden md:block absolute left-[27px] top-2 bottom-2 w-px flow-line-v"></div>
+
+      <ol class="space-y-10 md:space-y-12">
+        <!-- items injected structurally below -->
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">01</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">Linux &amp; development environment</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Got comfortable with the command line, file systems, and setting up a proper development environment as the foundation for everything that followed.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">02</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">Git &amp; GitHub</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Learned version control fundamentals — branching, commits, and pull requests — and used GitHub as the source of truth that triggers the pipeline.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">03</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">Docker &amp; containerization</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Practiced writing Dockerfiles, building images, and packaging an application so it runs consistently anywhere.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">04</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">AWS cloud</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Explored core AWS services and how they fit together to host and run a containerized application in the cloud.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">05</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">CI/CD automation</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Connected CodePipeline and CodeBuild so that a code push automatically builds and prepares a new container image, with no manual steps.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">06</span>
+          </div>
+          <div class="border-b border-line/70 pb-8 md:pb-10">
+            <h3 class="font-display font-medium text-lg text-fg">ECS Fargate deployment</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Deployed the container to Amazon ECS on Fargate, running the application without provisioning or managing servers directly.</p>
+          </div>
+        </li>
+
+        <li class="reveal grid md:grid-cols-[56px_1fr] gap-5 md:gap-8 items-start">
+          <div class="flex md:block">
+            <span class="w-14 h-14 rounded-lg border border-line bg-surface flex items-center justify-center font-mono text-sm text-cyan">07</span>
+          </div>
+          <div>
+            <h3 class="font-display font-medium text-lg text-fg">Production-style deployment</h3>
+            <p class="mt-2 text-muted leading-relaxed max-w-2xl">Brought every stage together into a single automated flow — from a Git push to a running container — structured the way a real deployment pipeline works.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CI/CD PIPELINE ============ -->
+<section id="pipeline" class="relative py-24 md:py-32 border-t border-line bg-surface/30">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="max-w-2xl reveal">
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl tracking-tight">From Git push to production</h2>
+      <p class="mt-4 text-muted leading-relaxed">
+        One commit can trigger an automated journey from source code to a running container on AWS.
+      </p>
+    </div>
+
+    <!-- pipeline file header bar -->
+    <div class="mt-14 rounded-xl border border-line bg-surface overflow-hidden reveal">
+      <div class="flex items-center gap-2 px-5 py-3 border-b border-line bg-surface2 font-mono text-xs text-muted">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5"/></svg>
+        pipeline.yml
+      </div>
+
+      <div class="p-5 sm:p-8">
+        <!-- desktop: horizontal -->
+        <div class="hidden lg:grid grid-cols-7 gap-0 items-stretch">
+          <!-- stage template x7 -->
+          <div class="stage-card relative rounded-lg border border-line bg-surface2 p-4 flex flex-col gap-3">
+            <div class="w-9 h-9 rounded-md bg-blue/10 text-blue flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.98 5.24.98 11.5c0 5 3.24 9.24 7.75 10.74.57.1.78-.25.78-.55v-2.1c-3.16.69-3.83-1.36-3.83-1.36-.52-1.32-1.26-1.67-1.26-1.67-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.74 2.66 1.24 3.31.95.1-.73.4-1.24.72-1.53-2.52-.29-5.17-1.26-5.17-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.14 1.16a10.9 10.9 0 0 1 5.72 0c2.18-1.47 3.14-1.16 3.14-1.16.62 1.58.23 2.75.11 3.04.73.79 1.17 1.8 1.17 3.04 0 4.35-2.65 5.31-5.18 5.59.41.35.77 1.04.77 2.1v3.11c0 .3.21.66.79.55 4.5-1.51 7.74-5.74 7.74-10.74C23.02 5.24 18.27.5 12 .5z"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">GitHub</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Source code is pushed to the repository.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center px-1">
+            <div class="w-full h-px flow-line"></div>
+          </div>
+
+          <div class="stage-card relative rounded-lg border border-line bg-surface2 p-4 flex flex-col gap-3">
+            <div class="w-9 h-9 rounded-md bg-cyan/10 text-cyan flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodePipeline</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Automatically triggers the deployment workflow.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center px-1">
+            <div class="w-full h-px flow-line"></div>
+          </div>
+
+          <div class="stage-card relative rounded-lg border border-line bg-surface2 p-4 flex flex-col gap-3">
+            <div class="w-9 h-9 rounded-md bg-violet/10 text-violet flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17h16M4 12h10M4 7h16"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodeBuild</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Builds the application and prepares the container image.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center px-1">
+            <div class="w-full h-px flow-line"></div>
+          </div>
+
+          <div class="stage-card relative rounded-lg border border-line bg-surface2 p-4 flex flex-col gap-3">
+            <div class="w-9 h-9 rounded-md bg-blue/10 text-blue flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">Amazon ECR</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Stores and manages the Docker container image.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center px-1">
+            <div class="w-full h-px flow-line"></div>
+          </div>
+
+          <div class="stage-card relative rounded-lg border border-line bg-surface2 p-4 flex flex-col gap-3">
+            <div class="w-9 h-9 rounded-md bg-cyan/10 text-cyan flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodeDeploy</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Handles the deployment process.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7th stage full width below the row on desktop -->
+        <div class="hidden lg:flex mt-4 items-center justify-center">
+          <div class="flex flex-col items-center">
+            <div class="w-px h-6 flow-line-v"></div>
+            <div class="stage-card relative rounded-lg border border-blue/40 bg-surface2 p-5 flex items-center gap-4 max-w-md">
+              <div class="w-11 h-11 shrink-0 rounded-md bg-violet/10 text-violet flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+              </div>
+              <div>
+                <p class="font-display font-medium text-sm text-fg">Amazon ECS Fargate</p>
+                <p class="mt-1 text-xs text-muted leading-relaxed">Runs the containerized application without managing servers.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- mobile / tablet: vertical timeline -->
+        <div class="lg:hidden space-y-4">
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-line bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-blue/10 text-blue flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.98 5.24.98 11.5c0 5 3.24 9.24 7.75 10.74.57.1.78-.25.78-.55v-2.1c-3.16.69-3.83-1.36-3.83-1.36-.52-1.32-1.26-1.67-1.26-1.67-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1.01 1.74 2.66 1.24 3.31.95.1-.73.4-1.24.72-1.53-2.52-.29-5.17-1.26-5.17-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.14 1.16a10.9 10.9 0 0 1 5.72 0c2.18-1.47 3.14-1.16 3.14-1.16.62 1.58.23 2.75.11 3.04.73.79 1.17 1.8 1.17 3.04 0 4.35-2.65 5.31-5.18 5.59.41.35.77 1.04.77 2.1v3.11c0 .3.21.66.79.55 4.5-1.51 7.74-5.74 7.74-10.74C23.02 5.24 18.27.5 12 .5z"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">GitHub</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Source code is pushed to the repository.</p>
+            </div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-4 flow-line-v"></div></div>
+
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-line bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-cyan/10 text-cyan flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodePipeline</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Automatically triggers the deployment workflow.</p>
+            </div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-4 flow-line-v"></div></div>
+
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-line bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-violet/10 text-violet flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17h16M4 12h10M4 7h16"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodeBuild</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Builds the application and prepares the container image.</p>
+            </div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-4 flow-line-v"></div></div>
+
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-line bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-blue/10 text-blue flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">Amazon ECR</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Stores and manages the Docker container image.</p>
+            </div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-4 flow-line-v"></div></div>
+
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-line bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-cyan/10 text-cyan flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">CodeDeploy</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Handles the deployment process.</p>
+            </div>
+          </div>
+          <div class="flex justify-center"><div class="w-px h-4 flow-line-v"></div></div>
+
+          <div class="stage-card flex gap-4 items-start rounded-lg border border-blue/40 bg-surface2 p-4">
+            <div class="w-9 h-9 shrink-0 rounded-md bg-violet/10 text-violet flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+            </div>
+            <div>
+              <p class="font-display font-medium text-sm text-fg">Amazon ECS Fargate</p>
+              <p class="mt-1 text-xs text-muted leading-relaxed">Runs the containerized application without managing servers.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SKILLS ============ -->
+<section id="skills" class="relative py-24 md:py-32 border-t border-line">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="max-w-2xl reveal">
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl tracking-tight">Skills &amp; hands-on practice</h2>
+      <p class="mt-4 text-muted leading-relaxed">
+        Tools and services I've used directly while building this pipeline, and what I practiced along the way.
+      </p>
+    </div>
+
+    <div class="mt-14 grid lg:grid-cols-3 gap-10">
+      <div class="lg:col-span-2 space-y-8 reveal">
+        <div>
+          <h3 class="font-mono text-xs text-cyan mb-3">Version control</h3>
+          <div class="flex flex-wrap gap-2.5">
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Git</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">GitHub</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-mono text-xs text-cyan mb-3">Systems &amp; containers</h3>
+          <div class="flex flex-wrap gap-2.5">
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Linux</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Docker</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Docker Containerization</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-mono text-xs text-cyan mb-3">AWS &amp; CI/CD</h3>
+          <div class="flex flex-wrap gap-2.5">
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">AWS</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">AWS CodePipeline</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">AWS CodeBuild</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Amazon ECR</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">AWS CodeDeploy</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Amazon ECS</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">ECS Fargate</span>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-mono text-xs text-cyan mb-3">Practices</h3>
+          <div class="flex flex-wrap gap-2.5">
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">CI/CD</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Automation</span>
+            <span class="chip rounded-md border border-line px-3.5 py-2 text-sm text-muted font-mono">Cloud Deployment</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal rounded-xl border border-line bg-surface p-6 sm:p-7 h-fit">
+        <h3 class="font-display font-medium text-fg mb-4">What I practiced</h3>
+        <ul class="space-y-3 text-sm text-muted">
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Automated CI/CD workflows</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Docker image creation</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Container deployment</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>AWS infrastructure workflow</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Git-based deployments</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Build automation</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Container registry workflow</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>ECS Fargate deployment</li>
+          <li class="flex gap-3"><span class="text-blue mt-0.5">•</span>Production-style deployment concepts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MENTOR ============ -->
+<section id="mentor" class="relative py-24 md:py-32 border-t border-line overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(700px circle at 80% 20%, rgba(139,127,255,0.10), transparent 60%);"></div>
+
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-8">
+    <div class="text-center reveal">
+      <h2 class="font-display font-semibold text-3xl sm:text-4xl tracking-tight">Guided by experience</h2>
+      <p class="mt-4 text-muted leading-relaxed max-w-xl mx-auto">
+        Every practical journey becomes easier with the right guidance.
+      </p>
+    </div>
+
+    <div class="mt-14 reveal rounded-2xl border border-violet/30 bg-gradient-to-b from-violet/[0.06] to-transparent p-8 sm:p-10">
+      <div class="flex flex-col sm:flex-row gap-7 items-start sm:items-center">
+        <div class="shrink-0 w-16 h-16 rounded-full bg-violet/15 border border-violet/40 flex items-center justify-center font-display font-semibold text-lg text-violet">
+          SA
+        </div>
+        <div>
+          <p class="font-display font-medium text-lg text-fg">Sk Alamgir Ali</p>
+          <p class="text-sm text-muted mt-0.5">Mentor &amp; Senior</p>
+        </div>
+      </div>
+
+      <p class="mt-7 text-muted leading-relaxed">
+        I'm grateful to my mentor and senior, Sk Alamgir Ali, for sharing his DevOps knowledge,
+        practical experience, and guidance throughout this learning journey. His practical approach
+        helped me understand DevOps beyond theory and encouraged me to build and automate real-world
+        deployment workflows.
+      </p>
+
+      <a href="https://www.linkedin.com/in/sk-a-ali" target="_blank" rel="noopener noreferrer"
+         class="mt-7 inline-flex items-center gap-2 rounded-md border border-violet/40 px-5 py-3 text-sm font-medium text-fg hover:bg-violet/10 hover:border-violet/70 transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+        Connect on LinkedIn
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t border-line py-12">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+    <div class="text-center sm:text-left">
+      <p class="font-display font-semibold text-fg">Soham Paul</p>
+      <p class="text-xs text-muted mt-1 font-mono">DevOps Journey · Automation · Cloud · CI/CD</p>
+    </div>
+
+    <a href="https://www.linkedin.com/in/paul-soham8/" target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center gap-2 text-sm text-muted hover:text-blue transition-colors">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45z"/></svg>
+      linkedin.com/in/paul-soham8
+    </a>
+
+    <div class="text-center sm:text-right text-xs text-muted">
+      <p>Built with HTML, Tailwind CSS &amp; JavaScript</p>
+      <p class="mt-1">© <span id="year"></span> Soham Paul. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // Current year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Mobile menu toggle
+  var menuBtn = document.getElementById('menu-btn');
+  var mobileMenu = document.getElementById('mobile-menu');
+  var iconOpen = document.getElementById('icon-open');
+  var iconClose = document.getElementById('icon-close');
+  var isOpen = false;
+
+  function setMenu(open) {
+    isOpen = open;
+    menuBtn.setAttribute('aria-expanded', String(open));
+    if (open) {
+      mobileMenu.style.maxHeight = mobileMenu.scrollHeight + 'px';
+      mobileMenu.style.opacity = '1';
+      iconOpen.classList.add('hidden');
+      iconClose.classList.remove('hidden');
+    } else {
+      mobileMenu.style.maxHeight = '0px';
+      mobileMenu.style.opacity = '0';
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+    }
+  }
+
+  menuBtn.addEventListener('click', function () { setMenu(!isOpen); });
+
+  document.querySelectorAll('[data-mobile]').forEach(function (link) {
+    link.addEventListener('click', function () { setMenu(false); });
+  });
+
+  // Header background on scroll
+  var header = document.getElementById('site-header');
+  function onScroll() {
+    if (window.scrollY > 8) {
+      header.classList.add('border-line');
+    } else {
+      header.classList.remove('border-line');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Active nav link on scroll (IntersectionObserver)
+  var sections = ['home', 'journey', 'pipeline', 'skills', 'mentor']
+    .map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+  var navLinks = document.querySelectorAll('[data-nav]');
+
+  function setActive(id) {
+    navLinks.forEach(function (link) {
+      var match = link.getAttribute('href') === '#' + id;
+      link.classList.toggle('active', match);
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { setActive(entry.target.id); }
+      });
+    }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+    sections.forEach(function (s) { observer.observe(s); });
+  }
+
+  // Scroll reveal
+  var revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var revealObserver = new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealEls.forEach(function (el) { revealObserver.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add('is-visible'); });
+  }
+
+  // Terminal typing effect
+  var terminalLines = [
+    { text: '$ git push origin main', cls: 'text-fg' },
+    { text: '> CodePipeline: change detected, starting run…', cls: 'text-cyan' },
+    { text: '> CodeBuild: installing dependencies…', cls: 'text-muted' },
+    { text: '> CodeBuild: building Docker image…', cls: 'text-muted' },
+    { text: '> Amazon ECR: pushing image…', cls: 'text-blue' },
+    { text: '> CodeDeploy: rolling out new revision…', cls: 'text-violet' },
+    { text: '> ECS Fargate: service running ✓', cls: 'text-green-400' }
+  ];
+
+  var termEl = document.getElementById('terminal-body');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function renderStatic() {
+    termEl.innerHTML = terminalLines.map(function (l) {
+      return '<div class="' + l.cls + '">' + l.text + '</div>';
+    }).join('');
+  }
+
+  function typeLines() {
+    var lineIndex = 0, charIndex = 0;
+    var container = document.createElement('div');
+    termEl.appendChild(container);
+
+    function step() {
+      if (lineIndex >= terminalLines.length) {
+        var caret = document.createElement('span');
+        caret.className = 'caret';
+        termEl.appendChild(caret);
+        return;
+      }
+      var line = terminalLines[lineIndex];
+      var lineEl = termEl.children[lineIndex];
+      if (!lineEl) {
+        lineEl = document.createElement('div');
+        lineEl.className = line.cls;
+        termEl.appendChild(lineEl);
+      }
+      charIndex++;
+      lineEl.textContent = line.text.slice(0, charIndex);
+
+      if (charIndex >= line.text.length) {
+        lineIndex++;
+        charIndex = 0;
+        setTimeout(step, 260);
+      } else {
+        setTimeout(step, 16);
+      }
+    }
+    step();
+  }
+
+  if (reduceMotion) {
+    renderStatic();
+  } else {
+    typeLines();
+  }
+
+  // Pipeline stage hover -> highlight connecting lines subtly (interactive touch)
+  document.querySelectorAll('.stage-card').forEach(function (card) {
+    card.addEventListener('mouseenter', function () {
+      card.style.zIndex = 10;
+    });
+    card.addEventListener('mouseleave', function () {
+      card.style.zIndex = '';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
